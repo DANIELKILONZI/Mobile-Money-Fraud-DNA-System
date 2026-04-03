@@ -482,3 +482,67 @@ def test_suspicious_cluster_depth_parameter(client):
     d1 = client.get("/graph/suspicious-cluster/USER_D0?depth=1").json()
     d2 = client.get("/graph/suspicious-cluster/USER_D0?depth=2").json()
     assert len(d2["nodes"]) >= len(d1["nodes"])
+
+
+# ── Demo routes ────────────────────────────────────────────────────────────────
+
+def test_demo_seed_returns_expected_keys(client):
+    resp = client.post("/demo/seed")
+    assert resp.status_code == 201
+    data = resp.json()
+    assert data["status"] == "seeded"
+    assert "demo_users" in data
+    assert "demo_endpoints" in data
+    assert "pitch_line" in data
+    users = data["demo_users"]
+    assert users["clean_user"] == "USER_CLEAN_001"
+    assert users["fraud_ring_entry"] == "USER_A"
+    assert isinstance(users["ring_members"], list)
+    assert len(users["ring_members"]) == 5
+
+
+def test_demo_seed_creates_users_in_store(client):
+    client.post("/demo/seed")
+    resp = client.get("/risk/user/USER_A")
+    assert resp.status_code == 200
+    resp2 = client.get("/risk/user/USER_CLEAN_001")
+    assert resp2.status_code == 200
+
+
+def test_demo_seed_fraud_ring_user_has_fraud_story(client):
+    client.post("/demo/seed")
+    data = client.get("/risk/user/USER_A").json()
+    assert data["fraud_story"] is not None
+    assert data["fraud_story"]["chain"]
+    assert "→" in data["fraud_story"]["chain"][0]
+
+
+def test_demo_seed_clean_user_has_no_fraud_story(client):
+    client.post("/demo/seed")
+    data = client.get("/risk/user/USER_CLEAN_001").json()
+    assert data["fraud_story"] is None
+
+
+def test_demo_seed_is_idempotent(client):
+    """Calling seed twice should not duplicate transactions."""
+    client.post("/demo/seed")
+    from app.core.storage import store
+    count_after_first = len(store.transactions)
+
+    client.post("/demo/seed")
+    count_after_second = len(store.transactions)
+    assert count_after_second == count_after_first
+
+
+def test_demo_page_returns_html(client):
+    resp = client.get("/demo")
+    assert resp.status_code == 200
+    assert "text/html" in resp.headers["content-type"]
+    assert "https://d3js.org/d3.v7.min.js" in resp.text
+    assert "Fraud DNA" in resp.text
+
+
+def test_demo_page_contains_graph_js(client):
+    resp = client.get("/demo")
+    assert "suspicious-cluster" in resp.text
+    assert "forceSimulation" in resp.text

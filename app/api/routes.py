@@ -125,7 +125,7 @@ def get_graph_summary() -> dict:
 @router.get("/graph/suspicious-cluster/{node_id}")
 def get_suspicious_cluster(node_id: str, depth: int = 2) -> dict:
     """
-    Return a colour-annotated subgraph around a node.
+    Return a color-annotated subgraph around a node.
 
     Each node is annotated with its risk level and color:
     - red   = HIGH risk

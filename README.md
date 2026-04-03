@@ -1,34 +1,96 @@
-# Mobile-Money-Fraud-DNA-System
-Mobile Money Behavioral Risk Intelligence API
+# Mobile Money Fraud DNA System
+**Behavioral + Graph Intelligence for Mobile Money Fraud Detection**
 
-## Overview
+> *"We plug into your transaction stream and reduce fraud losses using behavioral + graph intelligence — no changes to your core system."*
 
-A production-grade fraud detection and behavioral intelligence engine for mobile money transactions (M-Pesa-like systems). The system analyzes transaction behavior, builds a graph of interactions, and outputs real-time risk scores for users, merchants, transactions, and devices.
+---
+
+## What This Does
+
+A production-grade fraud detection engine for mobile money (M-Pesa-like) systems. It combines **behavioral analytics**, **graph cycle detection**, and **explainable AI narratives** to turn raw transactions into actionable intelligence.
+
+---
+
+## Product Tiers
+
+| Tier | Offering | Key Endpoint |
+|------|----------|--------------|
+| 🧩 **Risk Scoring API** | Real-time fraud score per transaction / user / merchant | `GET /risk/user/{id}` |
+| 🧠 **Intelligence Layer** | Fraud stories, behavioral insights, entity reputation | `GET /risk/user/{id}` → `fraud_story` |
+| 🌐 **Graph Surveillance** | Fraud ring detection, cluster analysis, visual graph | `GET /graph/suspicious-cluster/{id}` |
+
+---
+
+## 🎬 WOW Demo Flow (3 steps)
+
+**Setup — seed the demo in one call:**
+```bash
+# Terminal 1 — start the API
+uvicorn app.main:app --reload
+
+# Terminal 2 — seed the demo scenario
+python data/seed_demo.py
+```
+
+**Step 1 — Normal user**
+```
+GET /risk/user/USER_CLEAN_001
+→ LOW risk, stable reputation, no alerts, no fraud story
+```
+
+**Step 2 — Suspicious user**
+```
+GET /risk/user/USER_A
+→ HIGH risk, fraud_story with chain, alert triggered, reputation rising
+```
+
+**Step 3 — THE KILLER MOVE**
+```
+GET /graph/suspicious-cluster/USER_A
+→ Full fraud ring, color-coded nodes, edge weights
+```
+
+Then say: **"This is not one bad actor. This is a coordinated fraud ring."**
+
+**Visual Dashboard**
+```
+Open http://localhost:8000/demo
+→ D3.js force-directed graph, red = HIGH risk, interactive tooltips
+```
+
+---
 
 ## Architecture
 
 ```
 app/
 ├── api/
-│   └── routes.py          # FastAPI route definitions
+│   ├── routes.py           # Core API routes
+│   └── demo_routes.py      # Demo seeder + visualization page
 ├── core/
-│   └── storage.py         # In-memory state management
+│   └── storage.py          # In-memory state management
 ├── features/
-│   ├── behavioral.py      # Behavioral feature engineering
-│   └── graph_features.py  # Graph-based feature extraction
+│   ├── behavioral.py       # Behavioral feature engineering
+│   └── graph_features.py   # Graph-based feature extraction
 ├── graph/
-│   └── builder.py         # NetworkX directed graph manager
+│   ├── builder.py          # NetworkX directed graph manager
+│   └── cluster.py          # Suspicious cluster subgraph exporter
 ├── models/
-│   └── entities.py        # Pydantic data models
+│   └── entities.py         # Pydantic data models
 ├── services/
-│   ├── fraud_patterns.py  # Rule-based fraud pattern detectors
-│   └── risk_engine.py     # Hybrid risk scoring engine
-└── main.py                # FastAPI application entry point
+│   ├── fraud_patterns.py   # Rule-based fraud pattern detectors
+│   ├── fraud_story.py      # Fraud Story Mode narrative builder
+│   ├── reputation.py       # Entity reputation (EWMA long-term score)
+│   └── risk_engine.py      # Hybrid risk scoring engine
+└── main.py                 # FastAPI application entry point
 data/
-└── generate_sample.py     # Synthetic dataset generator
+├── generate_sample.py      # Synthetic dataset generator
+└── seed_demo.py            # Live demo seeder (HTTP-based)
 tests/
-└── test_api.py            # API integration tests
+└── test_api.py             # API integration tests (37 tests)
 ```
+
+---
 
 ## Tech Stack
 
@@ -36,8 +98,11 @@ tests/
 - **FastAPI** — REST API layer
 - **NetworkX** — Graph analysis (centrality, cycle detection)
 - **Pandas / NumPy** — Data processing
+- **D3.js** — In-browser force-directed graph visualization
 - **Uvicorn** — ASGI server
 - **Pydantic v2** — Data validation
+
+---
 
 ## Installation
 
@@ -51,8 +116,11 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 
-The API will be available at `http://localhost:8000`.  
-Interactive docs: `http://localhost:8000/docs`
+API: `http://localhost:8000`  
+Interactive docs: `http://localhost:8000/docs`  
+Visual demo: `http://localhost:8000/demo`
+
+---
 
 ## API Endpoints
 
@@ -72,7 +140,7 @@ Ingest a transaction and update the fraud graph.
 ```
 
 ### `GET /risk/user/{user_id}`
-Returns risk score and explanation for a user (phone number).
+Returns risk score, fraud story, alert, and reputation for a user.
 
 ### `GET /risk/merchant/{merchant_id}`
 Returns risk score and explanation for a merchant.
@@ -83,16 +151,28 @@ Returns risk score and explanation for a specific transaction.
 ### `GET /graph/summary`
 Returns graph statistics and top suspicious nodes.
 
+### `GET /graph/suspicious-cluster/{node_id}?depth=2`
+Returns a color-annotated subgraph centered on a node (BFS up to `depth` hops).  
+Node colors: 🔴 red = HIGH, 🟠 orange = MEDIUM, 🟢 green = LOW.
+
+### `POST /demo/seed`
+Seeds the in-memory store with a ready-made demo scenario (fraud ring + clean user + structuring user).
+
+### `GET /demo`
+Serves the interactive D3.js fraud graph visualization page.
+
+---
+
 ## Risk Score Output Format
 
 ```json
 {
   "entity_id": "+254700000001",
   "entity_type": "user",
-  "risk_score": 0.72,
+  "risk_score": 0.91,
   "risk_level": "HIGH",
   "reasons": [
-    "Circular money flow detected",
+    "Circular money flow detected involving this entity",
     "Device shared across 6 users"
   ],
   "features": {
@@ -100,11 +180,28 @@ Returns graph statistics and top suspicious nodes.
     "burst_score": 1.0,
     "degree_centrality": 0.45,
     "in_cycle": true
+  },
+  "fraud_story": {
+    "summary": "User is part of a suspected fraud ring involving 5 accounts; exhibits structuring behavior.",
+    "chain": ["USER_A → USER_B → USER_C → USER_D → USER_E → USER_A"],
+    "device_link": "Shared device (DEV_SHARED_001) used by 6 users",
+    "pattern": "Circular fund movement + Device sharing + Structuring"
+  },
+  "alert": {
+    "alert_type": "FRAUD_RING_DETECTED",
+    "severity": "HIGH"
+  },
+  "reputation": {
+    "long_term_score": 0.87,
+    "score_count": 12,
+    "trend": "RISING"
   }
 }
 ```
 
 Risk levels: `LOW` (< 0.4), `MEDIUM` (0.4–0.7), `HIGH` (≥ 0.7)
+
+---
 
 ## Risk Scoring Formula
 
@@ -117,6 +214,8 @@ risk_score = (
 )
 ```
 
+---
+
 ## Fraud Pattern Detectors
 
 | Pattern | Rule |
@@ -127,16 +226,23 @@ risk_score = (
 | Structuring | ≥ 5 small transfers (< 1,000) in 60 minutes |
 | New account high-value | Account < 24h old sends ≥ 50,000 transaction |
 
+---
+
 ## Generating Sample Data
 
 ```bash
 python data/generate_sample.py
 ```
 
-Outputs a JSON dataset with synthetic users, merchants, devices, and transactions including pre-seeded fraud patterns for testing.
+Outputs a JSON dataset with synthetic users, merchants, devices, and transactions including pre-seeded fraud patterns.
+
+---
 
 ## Running Tests
 
 ```bash
 python -m pytest tests/ -v
 ```
+
+37 tests covering all endpoints, fraud patterns, fraud story, reputation, alerts, cluster export, and demo routes.
+

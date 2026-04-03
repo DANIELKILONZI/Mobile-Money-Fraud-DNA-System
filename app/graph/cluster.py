@@ -1,4 +1,4 @@
-"""Suspicious Cluster Exporter — returns a colour-annotated subgraph around a node."""
+"""Suspicious Cluster Exporter — returns a color-annotated subgraph around a node."""
 
 from typing import Any, Dict, Optional
 
