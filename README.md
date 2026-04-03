@@ -20,27 +20,27 @@
 
 ---
 
-## 🧬 What Is This?
+## What Is This?
 
 **Mobile Money Fraud DNA** is a production-grade fraud detection platform for M-Pesa–style mobile money systems. It ingests raw transactions and produces:
 
 | Output | Description |
 |--------|-------------|
-| 🎯 **Risk Scores** | 0–1 score per user, merchant, or transaction |
-| 📖 **Fraud Stories** | Human-readable narrative explaining exactly *why* a user is suspicious |
-| 🌐 **Fraud Ring Detection** | Graph cycles revealing coordinated criminal networks |
-| 🔔 **Structured Alerts** | Typed alerts (FRAUD_RING_DETECTED, STRUCTURING, etc.) with severity |
-| 📊 **Live Graph Dashboard** | D3.js force-directed visualization — red clusters = money stolen |
+| **Risk Scores** | 0–1 score per user, merchant, or transaction |
+| **Fraud Stories** | Human-readable narrative explaining exactly *why* a user is suspicious |
+| **Fraud Ring Detection** | Graph cycles revealing coordinated criminal networks |
+| **Structured Alerts** | Typed alerts (FRAUD_RING_DETECTED, STRUCTURING, etc.) with severity |
+| **Live Graph Dashboard** | D3.js force-directed visualization — red clusters = money stolen |
 
 > *"We plug into your transaction stream and reduce fraud losses using behavioral + graph intelligence — no changes to your core system."*
 
 ---
 
-## 📦 Product Tiers
+## Product Tiers
 
 <div align="center">
 
-| | 🧩 Risk Scoring API | 🧠 Intelligence Layer | 🌐 Graph Surveillance |
+| | Risk Scoring API | Intelligence Layer | Graph Surveillance |
 |---|---|---|---|
 | **What it does** | Real-time fraud score per transaction / user / merchant | Fraud stories + behavioral insights + entity reputation | Fraud ring detection + cluster analysis + visual graph |
 | **Key endpoint** | `GET /risk/user/{id}` | `fraud_story` in risk response | `GET /graph/suspicious-cluster/{id}` |
@@ -50,7 +50,7 @@
 
 ---
 
-## 🎬 WOW Demo Flow
+## WOW Demo Flow
 
 > Run this before any pitch. Three API calls. One moment of silence.
 
@@ -71,7 +71,7 @@ curl -X POST http://localhost:8000/demo/seed
 
 ---
 
-### Step 1 — The Normal User 🟢
+### Step 1 — The Normal User 
 
 ```http
 GET /risk/user/USER_CLEAN_001
@@ -79,12 +79,12 @@ GET /risk/user/USER_CLEAN_001
 
 ```json
 {
-  "entity_id": "USER_CLEAN_001",
-  "risk_score": 0.05,
-  "risk_level": "LOW",
-  "fraud_story": null,
-  "alert": null,
-  "reputation": { "trend": "STABLE", "long_term_score": 0.05 }
+ "entity_id": "USER_CLEAN_001",
+ "risk_score": 0.05,
+ "risk_level": "LOW",
+ "fraud_story": null,
+ "alert": null,
+ "reputation": { "trend": "STABLE", "long_term_score": 0.05 }
 }
 ```
 
@@ -92,7 +92,7 @@ GET /risk/user/USER_CLEAN_001
 
 ---
 
-### Step 2 — The Suspicious User 🔴
+### Step 2 — The Suspicious User 
 
 ```http
 GET /risk/user/USER_A
@@ -100,17 +100,17 @@ GET /risk/user/USER_A
 
 ```json
 {
-  "entity_id": "USER_A",
-  "risk_score": 0.91,
-  "risk_level": "HIGH",
-  "fraud_story": {
-    "summary": "User is part of a suspected fraud ring involving 5 accounts; Shared device (DEV_SHARED_001) used by 6 users.",
-    "chain": ["USER_A → USER_B → USER_C → USER_D → USER_E → USER_A"],
-    "device_link": "Shared device (DEV_SHARED_001) used by 6 users",
-    "pattern": "Circular fund movement + Device sharing"
-  },
-  "alert": { "alert_type": "FRAUD_RING_DETECTED", "severity": "HIGH" },
-  "reputation": { "trend": "RISING", "long_term_score": 0.87 }
+ "entity_id": "USER_A",
+ "risk_score": 0.91,
+ "risk_level": "HIGH",
+ "fraud_story": {
+ "summary": "User is part of a suspected fraud ring involving 5 accounts; Shared device (DEV_SHARED_001) used by 6 users.",
+ "chain": ["USER_A → USER_B → USER_C → USER_D → USER_E → USER_A"],
+ "device_link": "Shared device (DEV_SHARED_001) used by 6 users",
+ "pattern": "Circular fund movement + Device sharing"
+ },
+ "alert": { "alert_type": "FRAUD_RING_DETECTED", "severity": "HIGH" },
+ "reputation": { "trend": "RISING", "long_term_score": 0.87 }
 }
 ```
 
@@ -118,7 +118,7 @@ GET /risk/user/USER_A
 
 ---
 
-### Step 3 — The Killer Move 💥
+### Step 3 — The Killer Move 
 
 ```http
 GET /graph/suspicious-cluster/USER_A
@@ -126,29 +126,29 @@ GET /graph/suspicious-cluster/USER_A
 
 ```json
 {
-  "center_node": "USER_A",
-  "cluster_risk": "HIGH",
-  "nodes": [
-    { "id": "USER_A", "risk_level": "HIGH",   "color": "red"    },
-    { "id": "USER_B", "risk_level": "HIGH",   "color": "red"    },
-    { "id": "USER_C", "risk_level": "MEDIUM", "color": "orange" },
-    { "id": "USER_D", "risk_level": "HIGH",   "color": "red"    },
-    { "id": "USER_E", "risk_level": "HIGH",   "color": "red"    }
-  ],
-  "edges": [
-    { "source": "USER_A", "target": "USER_B", "tx_count": 2, "total_amount": 15500.0 },
-    ...
-  ]
+ "center_node": "USER_A",
+ "cluster_risk": "HIGH",
+ "nodes": [
+ { "id": "USER_A", "risk_level": "HIGH", "color": "red" },
+ { "id": "USER_B", "risk_level": "HIGH", "color": "red" },
+ { "id": "USER_C", "risk_level": "MEDIUM", "color": "orange" },
+ { "id": "USER_D", "risk_level": "HIGH", "color": "red" },
+ { "id": "USER_E", "risk_level": "HIGH", "color": "red" }
+ ],
+ "edges": [
+ { "source": "USER_A", "target": "USER_B", "tx_count": 2, "total_amount": 15500.0 },
+ ...
+ ]
 }
 ```
 
 > **"This is not one bad actor. This is a coordinated fraud ring."**
 >
-> 👉 *That moment = the buying trigger.*
+> *That moment = the buying trigger.*
 
 ---
 
-### Visual Dashboard 📊
+### Visual Dashboard 
 
 ```
 Open → http://localhost:8000/demo
@@ -157,69 +157,69 @@ Open → http://localhost:8000/demo
 The live D3.js dashboard renders in any browser. No frontend setup required.
 
 ```
-🔴 Red nodes   = HIGH risk
-🟠 Orange nodes = MEDIUM risk
-🟢 Green nodes  = LOW risk
-━━ Edge thickness = transaction volume
+ Red nodes = HIGH risk
+ Orange nodes = MEDIUM risk
+ Green nodes = LOW risk
+ Edge thickness = transaction volume
 ```
 
 *Drag nodes. Hover for details. Click "Fraud ring" to load USER_A's cluster instantly.*
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                    FastAPI Application                          │
-│                                                                 │
-│  POST /transaction ──► Storage ──► Graph Builder               │
-│                                         │                      │
-│  GET /risk/user/{id} ◄──────────────────┤                      │
-│       │                            Risk Engine                 │
-│       ├── Behavioral Features      (velocity + graph +         │
-│       ├── Graph Features            device + amount)           │
-│       ├── Fraud Story Builder                                  │
-│       ├── Reputation Manager                                   │
-│       └── Alert Generator                                      │
-│                                                                 │
-│  GET /graph/suspicious-cluster/{id} ──► Cluster Exporter       │
-│  GET /demo ──────────────────────────► D3.js HTML Page         │
-│  POST /demo/seed ────────────────────► Demo Seeder             │
-└─────────────────────────────────────────────────────────────────┘
+
+ FastAPI Application 
+ 
+ POST /transaction Storage Graph Builder 
+ 
+ GET /risk/user/{id} 
+ Risk Engine 
+ Behavioral Features (velocity + graph + 
+ Graph Features device + amount) 
+ Fraud Story Builder 
+ Reputation Manager 
+ Alert Generator 
+ 
+ GET /graph/suspicious-cluster/{id} Cluster Exporter 
+ GET /demo D3.js HTML Page 
+ POST /demo/seed Demo Seeder 
+
 ```
 
 ```
 app/
-├── api/
-│   ├── routes.py           # Core API routes
-│   └── demo_routes.py      # Demo seeder + D3.js visualization page
-├── core/
-│   └── storage.py          # In-memory state management
-├── features/
-│   ├── behavioral.py       # Velocity, burst, structuring features
-│   └── graph_features.py   # Centrality, cycle, degree features
-├── graph/
-│   ├── builder.py          # NetworkX directed graph manager
-│   └── cluster.py          # BFS subgraph exporter with risk annotation
-├── models/
-│   └── entities.py         # Pydantic v2 data models
-├── services/
-│   ├── fraud_patterns.py   # Rule-based fraud pattern detectors
-│   ├── fraud_story.py      # Narrative builder (Fraud Story Mode)
-│   ├── reputation.py       # EWMA long-term reputation scoring
-│   └── risk_engine.py      # Hybrid scoring engine
-└── main.py                 # FastAPI entry point
+ api/
+ routes.py # Core API routes
+ demo_routes.py # Demo seeder + D3.js visualization page
+ core/
+ storage.py # In-memory state management
+ features/
+ behavioral.py # Velocity, burst, structuring features
+ graph_features.py # Centrality, cycle, degree features
+ graph/
+ builder.py # NetworkX directed graph manager
+ cluster.py # BFS subgraph exporter with risk annotation
+ models/
+ entities.py # Pydantic v2 data models
+ services/
+ fraud_patterns.py # Rule-based fraud pattern detectors
+ fraud_story.py # Narrative builder (Fraud Story Mode)
+ reputation.py # EWMA long-term reputation scoring
+ risk_engine.py # Hybrid scoring engine
+ main.py # FastAPI entry point
 data/
-├── generate_sample.py      # Synthetic dataset generator
-└── seed_demo.py            # HTTP-based live demo seeder (CLI)
+ generate_sample.py # Synthetic dataset generator
+ seed_demo.py # HTTP-based live demo seeder (CLI)
 tests/
-└── test_api.py             # 37 integration tests
+ test_api.py # 37 integration tests
 ```
 
 ---
 
-## ⚙️ Tech Stack
+## Tech Stack
 
 <div align="center">
 
@@ -238,7 +238,7 @@ tests/
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 **1. Clone & install**
 ```bash
@@ -262,20 +262,20 @@ uvicorn app.main:app --reload
 
 ---
 
-## 📡 API Reference
+## API Reference
 
 ### `POST /transaction`
 Ingest a transaction and update the fraud graph.
 
 ```json
 {
-  "tx_id": "TX_001",
-  "sender_id": "+254700000001",
-  "receiver_id": "+254700000002",
-  "amount": 1500.0,
-  "receiver_type": "user",
-  "device_id": "DEV_ABC123",
-  "location": "Nairobi"
+ "tx_id": "TX_001",
+ "sender_id": "+254700000001",
+ "receiver_id": "+254700000002",
+ "amount": 1500.0,
+ "receiver_type": "user",
+ "device_id": "DEV_ABC123",
+ "location": "Nairobi"
 }
 ```
 
@@ -302,16 +302,16 @@ Serves the interactive D3.js fraud graph visualization page.
 
 ---
 
-## 🔬 Risk Intelligence Details
+## Risk Intelligence Details
 
 ### Scoring Formula
 
 ```
 risk_score = (
-    velocity_anomaly  × 0.30   # burst of transactions in short window
-  + graph_anomaly     × 0.40   # cycle detection, centrality
-  + device_reuse      × 0.20   # shared device fingerprint
-  + amount_outlier    × 0.10   # statistical outlier amounts
+ velocity_anomaly × 0.30 # burst of transactions in short window
+ + graph_anomaly × 0.40 # cycle detection, centrality
+ + device_reuse × 0.20 # shared device fingerprint
+ + amount_outlier × 0.10 # statistical outlier amounts
 )
 ```
 
@@ -321,22 +321,22 @@ risk_score = (
 
 | Pattern | Trigger |
 |---------|---------|
-| 🔁 Circular flow | A → B → C → A detected in directed graph |
-| 📱 Device reuse | Same device fingerprint used by > 5 distinct users |
-| ⚡ Velocity spike | Transaction volume > 3× the entity's hourly baseline |
-| 🏗️ Structuring | ≥ 5 transfers under 1,000 within 60 minutes |
-| 🆕 New account abuse | Account < 24h old sends a transaction ≥ 50,000 |
+| Circular flow | A → B → C → A detected in directed graph |
+| Device reuse | Same device fingerprint used by > 5 distinct users |
+| Velocity spike | Transaction volume > 3× the entity's hourly baseline |
+| Structuring | ≥ 5 transfers under 1,000 within 60 minutes |
+| New account abuse | Account < 24h old sends a transaction ≥ 50,000 |
 
 ### Fraud Story Format
 
 ```json
 {
-  "fraud_story": {
-    "summary": "User is part of a suspected fraud ring involving 5 accounts; exhibits structuring behavior.",
-    "chain":   ["USER_A → USER_B → USER_C → USER_D → USER_E → USER_A"],
-    "device_link": "Shared device (DEV_SHARED_001) used by 6 users",
-    "pattern": "Circular fund movement + Device sharing + Structuring"
-  }
+ "fraud_story": {
+ "summary": "User is part of a suspected fraud ring involving 5 accounts; exhibits structuring behavior.",
+ "chain": ["USER_A → USER_B → USER_C → USER_D → USER_E → USER_A"],
+ "device_link": "Shared device (DEV_SHARED_001) used by 6 users",
+ "pattern": "Circular fund movement + Device sharing + Structuring"
+ }
 }
 ```
 
@@ -352,7 +352,7 @@ risk_score = (
 
 ---
 
-## 🧪 Tests
+## Tests
 
 ```bash
 python -m pytest tests/ -v
@@ -361,23 +361,23 @@ python -m pytest tests/ -v
 ```
 37 passed in 0.95s
 
-  ✓ Health check
-  ✓ Transaction ingestion (user & merchant)
-  ✓ Risk scoring (user / merchant / transaction)
-  ✓ Graph summary
-  ✓ Device reuse, circular flow, structuring detection
-  ✓ Behavioral & graph features
-  ✓ Fraud story (present, absent, chain, device_link)
-  ✓ Alerts (present, absent)
-  ✓ Reputation scoring
-  ✓ Suspicious cluster (404, subgraph, center node, depth)
-  ✓ Demo seed (idempotent, fraud ring story, clean user)
-  ✓ Demo page (HTML, D3.js graph)
+ Health check
+ Transaction ingestion (user & merchant)
+ Risk scoring (user / merchant / transaction)
+ Graph summary
+ Device reuse, circular flow, structuring detection
+ Behavioral & graph features
+ Fraud story (present, absent, chain, device_link)
+ Alerts (present, absent)
+ Reputation scoring
+ Suspicious cluster (404, subgraph, center node, depth)
+ Demo seed (idempotent, fraud ring story, clean user)
+ Demo page (HTML, D3.js graph)
 ```
 
 ---
 
-## 🗂️ Generating Sample Data
+## Generating Sample Data
 
 ```bash
 python data/generate_sample.py
@@ -387,7 +387,7 @@ Produces a JSON dataset with 20 users, 5 merchants, 12 devices, and 80 transacti
 
 ---
 
-## 👤 Author
+## Author
 
 <div align="center">
 
