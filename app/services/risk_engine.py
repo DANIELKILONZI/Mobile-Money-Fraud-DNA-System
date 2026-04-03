@@ -1,11 +1,13 @@
 import statistics
-from typing import List
+from typing import List, Optional
 
 from app.core.storage import Store
 from app.graph.builder import GraphManager
 from app.features.behavioral import BehavioralFeatures
 from app.features.graph_features import GraphFeatures
 from app.services.fraud_patterns import FraudPatternDetector
+from app.services.fraud_story import FraudStoryBuilder
+from app.services.reputation import reputation_manager
 from app.models.entities import Transaction
 
 
@@ -17,6 +19,29 @@ def _risk_level(score: float) -> str:
     return "LOW"
 
 
+def _build_alert(risk_level: str, reasons: list[str]) -> Optional[dict]:
+    """Map detected patterns to a structured alert object."""
+    if risk_level == "LOW":
+        return None
+    severity = risk_level
+    reasons_lower = " ".join(reasons).lower()
+
+    if "circular" in reasons_lower or "cycle" in reasons_lower:
+        alert_type = "FRAUD_RING_DETECTED"
+    elif "structuring" in reasons_lower or "small transfer" in reasons_lower:
+        alert_type = "STRUCTURING_DETECTED"
+    elif "device" in reasons_lower:
+        alert_type = "DEVICE_SHARING_DETECTED"
+    elif "spike" in reasons_lower or "velocity" in reasons_lower:
+        alert_type = "VELOCITY_SPIKE"
+    elif "new account" in reasons_lower:
+        alert_type = "NEW_ACCOUNT_HIGH_VALUE"
+    else:
+        alert_type = "SUSPICIOUS_ACTIVITY"
+
+    return {"alert_type": alert_type, "severity": severity}
+
+
 class RiskEngine:
     """Hybrid risk scoring engine combining behavioral and graph analytics."""
 
@@ -26,6 +51,7 @@ class RiskEngine:
         self.behavioral = BehavioralFeatures(store)
         self.graph_feat = GraphFeatures(graph_manager)
         self.pattern_detector = FraudPatternDetector(store, graph_manager)
+        self.story_builder = FraudStoryBuilder(store, graph_manager)
 
     def score_user(self, user_id: str) -> dict:
         beh = self.behavioral.compute(user_id)
@@ -47,14 +73,30 @@ class RiskEngine:
         risk_score = min(risk_score, 1.0)
 
         reasons.extend(self._explain(velocity_anomaly, graph_anomaly, device_reuse_score, amount_outlier_score))
+        reasons = list(set(reasons))
+
+        risk_level = _risk_level(risk_score)
+
+        # Update and fetch reputation
+        reputation_manager.update(user_id, risk_score)
+        reputation = reputation_manager.get_reputation_info(user_id)
+
+        # Build fraud story (only when risk warrants it)
+        fraud_story = self.story_builder.build(user_id, reasons, risk_score)
+
+        # Build alert
+        alert = _build_alert(risk_level, reasons)
 
         return {
             "entity_id": user_id,
             "entity_type": "user",
             "risk_score": risk_score,
-            "risk_level": _risk_level(risk_score),
-            "reasons": list(set(reasons)),
+            "risk_level": risk_level,
+            "reasons": reasons,
             "features": {**beh, **grf},
+            "fraud_story": fraud_story,
+            "alert": alert,
+            "reputation": reputation,
         }
 
     def score_merchant(self, merchant_id: str) -> dict:
@@ -85,13 +127,24 @@ class RiskEngine:
         if velocity_anomaly > 0.7:
             reasons.append("High incoming transaction volume")
 
+        risk_level = _risk_level(risk_score)
+
+        # Update and fetch reputation
+        reputation_manager.update(merchant_id, risk_score)
+        reputation = reputation_manager.get_reputation_info(merchant_id)
+
+        alert = _build_alert(risk_level, reasons)
+
         return {
             "entity_id": merchant_id,
             "entity_type": "merchant",
             "risk_score": risk_score,
-            "risk_level": _risk_level(risk_score),
+            "risk_level": risk_level,
             "reasons": reasons,
             "features": {**beh, **grf, "total_received": len(recv_amounts)},
+            "fraud_story": None,
+            "alert": alert,
+            "reputation": reputation,
         }
 
     def score_transaction(self, tx_id: str) -> dict:
@@ -104,6 +157,9 @@ class RiskEngine:
                 "risk_level": "LOW",
                 "reasons": ["Transaction not found"],
                 "features": {},
+                "fraud_story": None,
+                "alert": None,
+                "reputation": None,
             }
 
         sender_risk = self.score_user(tx.sender_id)
@@ -128,11 +184,14 @@ class RiskEngine:
         if amount_outlier > 0.7:
             reasons.append(f"Transaction amount {tx.amount} is an outlier for this sender")
 
+        risk_level = _risk_level(risk_score)
+        alert = _build_alert(risk_level, reasons)
+
         return {
             "entity_id": tx_id,
             "entity_type": "transaction",
             "risk_score": risk_score,
-            "risk_level": _risk_level(risk_score),
+            "risk_level": risk_level,
             "reasons": list(set(reasons)),
             "features": {
                 "sender_id": tx.sender_id,
@@ -144,6 +203,9 @@ class RiskEngine:
                 "device_reuse_score": device_reuse_score,
                 "amount_outlier_score": amount_outlier,
             },
+            "fraud_story": sender_risk.get("fraud_story"),
+            "alert": alert,
+            "reputation": None,
         }
 
     # --- private helpers ---

@@ -116,6 +116,28 @@ class GraphManager:
         except Exception:
             return False
 
+    def get_cycles_for_node(self, node_id: str, max_length: int = 5) -> list[list[str]]:
+        """Return all short cycles that include node_id (only user/merchant nodes)."""
+        if not self.graph.has_node(node_id):
+            return []
+        # Work on the sub-graph excluding device nodes to keep chains readable
+        non_device_nodes = [
+            n for n in self.graph.nodes
+            if self.graph.nodes[n].get("node_type") != "device"
+        ]
+        subgraph = self.graph.subgraph(non_device_nodes)
+        found = []
+        try:
+            for cycle in nx.simple_cycles(subgraph):
+                if node_id in cycle and len(cycle) <= max_length:
+                    # Rotate so node_id is first
+                    idx = cycle.index(node_id)
+                    rotated = cycle[idx:] + cycle[:idx]
+                    found.append(rotated)
+        except Exception:
+            pass
+        return found
+
     def get_flagged_neighbors(self, node_id: str, flagged_nodes: set) -> int:
         """Count how many direct neighbors are flagged."""
         if not self.graph.has_node(node_id):

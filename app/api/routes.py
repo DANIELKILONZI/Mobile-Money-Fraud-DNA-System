@@ -5,11 +5,23 @@ from fastapi import APIRouter, HTTPException
 
 from app.core.storage import store
 from app.graph.builder import graph_manager
+from app.graph.cluster import ClusterExporter
 from app.models.entities import Transaction, TransactionRequest, RiskResponse
 from app.services.risk_engine import RiskEngine
+from app.services.reputation import reputation_manager
 
 router = APIRouter()
 risk_engine = RiskEngine(store, graph_manager)
+cluster_exporter = ClusterExporter(graph_manager)
+
+
+def _score_node(node_id: str, node_type: str) -> dict:
+    """Helper used by ClusterExporter to score any node type."""
+    if node_type == "merchant" and node_id in store.merchants:
+        return risk_engine.score_merchant(node_id)
+    if node_type == "user" and node_id in store.users:
+        return risk_engine.score_user(node_id)
+    return {"risk_level": "UNKNOWN", "risk_score": 0.0}
 
 
 @router.post("/transaction", response_model=dict, status_code=201)
@@ -51,7 +63,7 @@ def ingest_transaction(req: TransactionRequest) -> dict:
 
 @router.get("/risk/user/{user_id}", response_model=RiskResponse)
 def get_user_risk(user_id: str) -> dict:
-    """Return risk score and explanation for a user."""
+    """Return risk score, fraud story and explanation for a user."""
     if user_id not in store.users:
         raise HTTPException(status_code=404, detail=f"User '{user_id}' not found")
     return risk_engine.score_user(user_id)
@@ -108,3 +120,23 @@ def get_graph_summary() -> dict:
         "total_transactions": len(store.transactions),
         "top_suspicious_nodes": top_suspicious,
     }
+
+
+@router.get("/graph/suspicious-cluster/{node_id}")
+def get_suspicious_cluster(node_id: str, depth: int = 2) -> dict:
+    """
+    Return a colour-annotated subgraph around a node.
+
+    Each node is annotated with its risk level and color:
+    - red   = HIGH risk
+    - orange = MEDIUM risk
+    - green = LOW risk
+
+    Use *depth* (default 2) to control how many hops to expand.
+    """
+    cluster = cluster_exporter.get_suspicious_cluster(
+        node_id, risk_scorer=_score_node, depth=depth
+    )
+    if cluster is None:
+        raise HTTPException(status_code=404, detail=f"Node '{node_id}' not found in graph")
+    return cluster

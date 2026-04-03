@@ -43,6 +43,24 @@ class TransactionRequest(BaseModel):
     merchant_category: Optional[str] = "general"
 
 
+class FraudStory(BaseModel):
+    summary: str
+    chain: list[str]
+    device_link: Optional[str] = None
+    pattern: str
+
+
+class Alert(BaseModel):
+    alert_type: str
+    severity: str
+
+
+class ReputationInfo(BaseModel):
+    long_term_score: float
+    score_count: int
+    trend: str  # "RISING", "STABLE", "FALLING"
+
+
 class RiskResponse(BaseModel):
     entity_id: str
     entity_type: str
@@ -50,3 +68,6 @@ class RiskResponse(BaseModel):
     risk_level: str
     reasons: list[str]
     features: dict
+    fraud_story: Optional[FraudStory] = None
+    alert: Optional[Alert] = None
+    reputation: Optional[ReputationInfo] = None
